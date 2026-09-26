@@ -7,7 +7,7 @@
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { jwtDecode } from '../utils/jwt.js';
-import type { JwtPayload } from '@matka/types';
+import type { JwtPayload } from '../types/jwt';
 
 // ---------------------------------------------------------------------------
 // Types

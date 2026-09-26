@@ -16,7 +16,6 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@matka/types": ["../backend/src/types/index.ts"],
       "@/*": ["src/*"]
     }
   },

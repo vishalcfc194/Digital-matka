@@ -8,7 +8,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
-      '@matka/types': resolve(__dirname, '../backend/src/types/index.ts'),
     },
   },
   server: {
