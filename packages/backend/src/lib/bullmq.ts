@@ -28,24 +28,28 @@ export const QUEUE_MARKET_LOCKOUT = 'market-lockout';
 // BullMQ requires maxRetriesPerRequest: null on its connections.
 // ---------------------------------------------------------------------------
 
-const redisConnection = {
-  host: (() => {
-    try {
-      return new URL(REDIS_URL).hostname;
-    } catch {
-      return 'localhost';
-    }
-  })(),
-  port: (() => {
-    try {
-      return parseInt(new URL(REDIS_URL).port || '6379', 10);
-    } catch {
-      return 6379;
-    }
-  })(),
-  maxRetriesPerRequest: null as null,
-  enableReadyCheck: false,
-};
+const redisConnection = (() => {
+  try {
+    const url = new URL(REDIS_URL);
+    const password = url.password ? decodeURIComponent(url.password) : undefined;
+    const username = url.username ? decodeURIComponent(url.username) : undefined;
+    return {
+      host: url.hostname || 'localhost',
+      port: parseInt(url.port || '6379', 10),
+      ...(username ? { username } : {}),
+      ...(password ? { password } : {}),
+      maxRetriesPerRequest: null as null,
+      enableReadyCheck: false,
+    };
+  } catch {
+    return {
+      host: 'localhost',
+      port: 6379,
+      maxRetriesPerRequest: null as null,
+      enableReadyCheck: false,
+    };
+  }
+})();
 
 // ---------------------------------------------------------------------------
 // Factory: Queue

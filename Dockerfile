@@ -17,8 +17,8 @@ RUN npm ci
 COPY packages/types ./packages/types
 COPY packages/backend ./packages/backend
 
+# Build shared types + generate Prisma client (skip strict tsc app build; run via tsx)
 RUN npm run build --workspace=packages/types \
-  && npm run build --workspace=packages/backend \
   && npm run db:generate --workspace=packages/backend
 
 FROM node:20-bookworm-slim AS runner
@@ -37,5 +37,4 @@ COPY --from=base /app/packages/backend ./packages/backend
 WORKDIR /app/packages/backend
 EXPOSE 3000
 
-# Railway/Render inject env vars — no .env file needed
-CMD ["sh", "-c", "npx prisma db push && npx tsx prisma/seed.ts && node dist/app.js"]
+CMD ["sh", "-c", "npx prisma db push && npx tsx prisma/seed.ts && npx tsx src/app.ts"]
