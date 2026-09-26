@@ -13,6 +13,7 @@
     "build:types": "npm run build --workspace=packages/types",
     "build:backend": "npm run build:types && npm run build --workspace=packages/backend",
     "build:frontend": "npm run build --workspace=packages/frontend",
+    "start:backend": "npm run start:prod --workspace=packages/backend",
     "test:backend": "npm run test --workspace=packages/backend",
     "test": "npm run test:backend"
   },

@@ -1,0 +1,14 @@
+node_modules
+**/node_modules
+**/dist
+.git
+.kiro
+*.md
+dump.rdb
+packages/frontend
+.env
+.env.*
+!.env.example
+**/*.test.ts
+coverage
+.vite

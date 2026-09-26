@@ -1,15 +1,16 @@
 /**
  * Seed script for the Matka Game Platform.
  * Creates:
- *   - SuperAdmin account (username: 'superadmin', password: 'SuperAdmin@123')
- *   - Default PlatformConfig with DEFAULT_WINNING_MULTIPLIERS
- *   - All 11 standard Matka markets
+ *   - SuperAdmin: superadmin / SuperAdmin@123
+ *   - Admin:      admin1 / Admin@12345  (referral code ADMINDEMO)
+ *   - User:       user1 / User@12345    (wallet welcome bonus: 5000)
+ *   - Default PlatformConfig + standard markets
  *
  * Run with: npm run db:seed
  */
 
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import { BetType, DEFAULT_WINNING_MULTIPLIERS } from '../src/types/index.js';
 
 const prisma = new PrismaClient();
@@ -138,7 +139,81 @@ async function main(): Promise<void> {
   });
 
   console.log(`✅ Markets: ${marketsCreated} created, ${marketsUpdated} updated, ${deactivated.count} deactivated.`);
+
+  // 4. Demo Admin
+  const adminPasswordHash = await bcrypt.hash('Admin@12345', 12);
+  const demoAdmin = await prisma.admin.upsert({
+    where: { username: 'admin1' },
+    update: {},
+    create: {
+      username: 'admin1',
+      password_hash: adminPasswordHash,
+      referral_code: 'ADMINDEMO',
+      is_active: true,
+      min_bet_points: 10,
+      max_bet_points: 10000,
+      allocated_points: BigInt(10000),
+      used_points: BigInt(5000),
+    },
+  });
+  console.log(`✅ Admin created/found: ${demoAdmin.username} (referral: ${demoAdmin.referral_code})`);
+
+  // Ensure admin has enough allocation for welcome bonus (idempotent)
+  if (demoAdmin.allocated_points < BigInt(10000)) {
+    await prisma.admin.update({
+      where: { id: demoAdmin.id },
+      data: { allocated_points: BigInt(10000) },
+    });
+  }
+
+  // 5. Demo User + 5000 welcome bonus wallet
+  const userPasswordHash = await bcrypt.hash('User@12345', 12);
+  const existingUser = await prisma.user.findUnique({ where: { username: 'user1' } });
+
+  let demoUser = existingUser;
+  if (!demoUser) {
+    demoUser = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          username: 'user1',
+          password_hash: userPasswordHash,
+          role: 'user',
+          admin_id: demoAdmin.id,
+          is_active: true,
+        },
+      });
+      await tx.wallet.create({
+        data: {
+          user_id: user.id,
+          balance_points: BigInt(5000),
+          held_points: BigInt(0),
+        },
+      });
+      return user;
+    });
+    console.log(`✅ User created: user1 with 5000 welcome bonus`);
+  } else {
+    await prisma.wallet.upsert({
+      where: { user_id: demoUser.id },
+      create: {
+        user_id: demoUser.id,
+        balance_points: BigInt(5000),
+        held_points: BigInt(0),
+      },
+      update: {
+        balance_points: BigInt(5000),
+        held_points: BigInt(0),
+      },
+    });
+    console.log(`✅ User found: user1 — wallet set to 5000 welcome bonus`);
+  }
+
   console.log('🎉 Seed completed successfully.');
+  console.log('');
+  console.log('Login credentials:');
+  console.log('  SuperAdmin  superadmin / SuperAdmin@123');
+  console.log('  Admin       admin1     / Admin@12345');
+  console.log('  User        user1      / User@12345   (wallet: 5000)');
 }
 
 main()
